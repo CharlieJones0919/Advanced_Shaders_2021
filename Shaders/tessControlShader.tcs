@@ -57,19 +57,21 @@ void main()
 float GetTessLevelStep(float distA, float distB)
 {
 	float avgDist = (distA + distB) / 2.0f;
+	float tessLevel = 1;
 	
-	if (avgDist <= 1) { return 150;  }
-	else if (avgDist <= 2.5) { return 100;  }
-	else if (avgDist <= 4) { return 75;  }
-	else if (avgDist <= 7.5) { return 50;  }
-	else if (avgDist <= 10) { return 25;  }
-	else if (avgDist <= 25) { return 15;  }
-	else if (avgDist <= 50) { return 10;  }
-	else if (avgDist <= 75) { return 5; }
-	else if (avgDist <= 100) { return 3; }
-	else if (avgDist <= 125) { return 1.5; }
-	else if (avgDist <= 150) { return 1.25; }
-	else { return 1; }
+	if (avgDist <= 1)        { tessLevel = 150; }
+	else if (avgDist <= 2.5) { tessLevel = 100; }
+	else if (avgDist <= 4)   { tessLevel = 75;  }
+	else if (avgDist <= 7.5) { tessLevel = 50;  }
+	else if (avgDist <= 10)  { tessLevel = 25;  }
+	else if (avgDist <= 25)  { tessLevel = 15;  }
+	else if (avgDist <= 50)  { tessLevel = 10;  }
+	else if (avgDist <= 75)  { tessLevel = 5;   }
+	else if (avgDist <= 100) { tessLevel = 3;   }
+	else if (avgDist <= 125) { tessLevel = 1.5; }
+	else if (avgDist <= 150) { tessLevel = 1.25;}
+
+	return clamp(tessLevel, 1, maxDivisions);
 }
 
 float GetTessLevelExpo(float distA, float distB)

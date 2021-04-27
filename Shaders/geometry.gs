@@ -5,6 +5,7 @@ vec3 getNormal() ;
 
 in vec3 tEPos[];
 in vec2 tETexCoords[];
+in vec3 tENormals[];
 
 out vec3 gPos;
 out vec3 gNormals;
@@ -16,7 +17,8 @@ void main()
    {
       gl_Position = gl_in[i].gl_Position;
       gPos = tEPos[i] ;
-      gNormals = getNormal() ;    
+      //gNormals = getNormal();    
+	  gNormals = tENormals[i];
 	  gTexCoords = tETexCoords[i];
       EmitVertex() ;
    }

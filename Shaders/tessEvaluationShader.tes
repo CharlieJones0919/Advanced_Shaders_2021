@@ -12,6 +12,7 @@ vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2) ;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+
 uniform sampler2D heightMapTex;
 uniform float heightMapScale;
 
@@ -22,6 +23,7 @@ in vec2 tCTexCoords[];
 // pass along the interpolated values
 out vec3 tEPos;
 out vec2 tETexCoords;
+out vec3 tENormals;
 
 void main()
 {
@@ -29,6 +31,14 @@ void main()
     // use 3D because they are in three dimensions; 2D also included for uv texture coordinates
    tEPos = interpolate3D(tCPos[0], tCPos[1], tCPos[2]) ;
    tETexCoords = interpolate2D(tCTexCoords[0], tCTexCoords[1], tCTexCoords[2]);
+
+	float left = (textureOffset(heightMapTex, tETexCoords, ivec2(-1,0)).r) * heightMapScale;
+	float right = (textureOffset(heightMapTex, tETexCoords, ivec2(1,0)).r) * heightMapScale;
+	float up = (textureOffset(heightMapTex, tETexCoords, ivec2(0,1)).r) * heightMapScale;
+	float down = (textureOffset(heightMapTex, tETexCoords, ivec2(0,-1)).r) * heightMapScale;
+	float lr = left - right;
+	float du = up - down;
+	tENormals = normalize(vec3(lr, 2.0f, du));
 
    float height = texture(heightMapTex, tETexCoords).r;
    tEPos.y = height * heightMapScale; 

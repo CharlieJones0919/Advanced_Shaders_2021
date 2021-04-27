@@ -20,8 +20,6 @@ struct DirLight {
 }; 
 
 uniform sampler2D groundTex;
-uniform float groundTexScaler;
-
 uniform DirLight dirLight;
 uniform Material mat;
 uniform vec3 eyePos;
@@ -44,5 +42,5 @@ void main()
     vec3 diffuse  = dirLight.diffuse  * (diff * mat.diffuse);
     vec3 specular = dirLight.specular * (spec * mat.specular);
   
-	FragColor = vec4((ambient + diffuse + specular),1.0f) * (texture(groundTex , gTexCoords * groundTexScaler)) ;
+	FragColor = (texture(groundTex, gTexCoords) * vec4((ambient + diffuse + specular),1.0f)) ;
 }

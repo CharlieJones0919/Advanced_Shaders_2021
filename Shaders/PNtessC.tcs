@@ -2,12 +2,18 @@
 layout (vertices =1) out;
 
 float GetTessLevelStep(float distA, float distB) ;
+float GetTessLevelExpo(float distA, float distB) ;
+
 void CalcPositions();
 vec3 ProjectToPlane(vec3 Point, vec3 PlanePoint, vec3 PlaneNormal) ;
 vec3 getNormal(vec3 a, vec3 b, vec3 c) ;
 
+uniform sampler2D heightMapTex;
+uniform float heightMapScale;
+
 uniform float maxDivisions;
 uniform vec3 eyePos;
+uniform bool stepTess;
 
 in vec3 vPos[];
 in vec2 vTexCoords[] ;
@@ -25,6 +31,7 @@ struct OutputPatch
     vec3 WorldPos_B120;
     vec3 WorldPos_B111;
     vec2 tc_texCoords[3];
+	vec3 tc_norms[3];
 };
 
 // attributes of the output CPs
@@ -41,10 +48,21 @@ void main()
    float eyeToVertexDist0 = distance(eyePos, vPos[0]);
    float eyeToVertexDist1 = distance(eyePos, vPos[1]);
    float eyeToVertexDist2 = distance(eyePos, vPos[2]);
-   gl_TessLevelOuter[0] = GetTessLevelStep(eyeToVertexDist1, eyeToVertexDist2);
-   gl_TessLevelOuter[1] = GetTessLevelStep(eyeToVertexDist2, eyeToVertexDist0);
-   gl_TessLevelOuter[2] = GetTessLevelStep(eyeToVertexDist0, eyeToVertexDist1);
-   gl_TessLevelInner[0] = GetTessLevelStep(eyeToVertexDist0, eyeToVertexDist1);
+   
+   if (stepTess)
+   {
+	   gl_TessLevelOuter[0] = GetTessLevelStep(eyeToVertexDist1, eyeToVertexDist2);
+	   gl_TessLevelOuter[1] = GetTessLevelStep(eyeToVertexDist2, eyeToVertexDist0);
+	   gl_TessLevelOuter[2] = GetTessLevelStep(eyeToVertexDist0, eyeToVertexDist1);
+	   gl_TessLevelInner[0] = GetTessLevelStep(eyeToVertexDist0, eyeToVertexDist1);
+   }
+   else
+   {
+   	   gl_TessLevelOuter[0] = GetTessLevelExpo(eyeToVertexDist1, eyeToVertexDist2);
+	   gl_TessLevelOuter[1] = GetTessLevelExpo(eyeToVertexDist2, eyeToVertexDist0);
+	   gl_TessLevelOuter[2] = GetTessLevelExpo(eyeToVertexDist0, eyeToVertexDist1);
+	   gl_TessLevelInner[0] = GetTessLevelExpo(eyeToVertexDist0, eyeToVertexDist1);
+   }
 }
 
 vec3 getNormal(vec3 a, vec3 b, vec3 c)
@@ -73,6 +91,18 @@ void CalcPositions()
     oPatch.WorldPos_B201 = oPatch.WorldPos_B003 + EdgeB030 * 2.0 / 3.0;
     oPatch.WorldPos_B210 = oPatch.WorldPos_B300 + EdgeB003 / 3.0;
     oPatch.WorldPos_B120 = oPatch.WorldPos_B300 + EdgeB003 * 2.0 / 3.0;
+
+   for(int i = 0 ; i < 3; i++)
+   {
+   	float left = (textureOffset(heightMapTex, vTexCoords[i], ivec2(-1,0)).r) * heightMapScale;
+	float right = (textureOffset(heightMapTex, vTexCoords[i], ivec2(1,0)).r) * heightMapScale;
+	float up = (textureOffset(heightMapTex, vTexCoords[i], ivec2(0,1)).r) * heightMapScale;
+	float down = (textureOffset(heightMapTex, vTexCoords[i], ivec2(0,-1)).r) * heightMapScale;
+	
+	float lr = left - right;
+	float du = up - down;
+	oPatch.tc_norms[i] = normalize(vec3(lr, 2.0f, du));
+   }
 
     // Project each midpoint on the plane defined by the nearest vertex and its normal
     oPatch.WorldPos_B021 = ProjectToPlane(oPatch.WorldPos_B021, oPatch.WorldPos_B030,
@@ -107,19 +137,21 @@ vec3 ProjectToPlane(vec3 Point, vec3 PlanePoint, vec3 PlaneNormal)
 float GetTessLevelStep(float distA, float distB)
 {
 	float avgDist = (distA + distB) / 2.0f;
+	float tessLevel = 1;
 	
-	if (avgDist <= 1) { return 150;  }
-	else if (avgDist <= 2.5) { return 100;  }
-	else if (avgDist <= 4) { return 75;  }
-	else if (avgDist <= 7.5) { return 50;  }
-	else if (avgDist <= 10) { return 25;  }
-	else if (avgDist <= 25) { return 15;  }
-	else if (avgDist <= 50) { return 10;  }
-	else if (avgDist <= 75) { return 5; }
-	else if (avgDist <= 100) { return 3; }
-	else if (avgDist <= 125) { return 1.5; }
-	else if (avgDist <= 150) { return 1.25; }
-	else { return 1; }
+	if (avgDist <= 1)        { tessLevel = 150; }
+	else if (avgDist <= 2.5) { tessLevel = 100; }
+	else if (avgDist <= 4)   { tessLevel = 75;  }
+	else if (avgDist <= 7.5) { tessLevel = 50;  }
+	else if (avgDist <= 10)  { tessLevel = 25;  }
+	else if (avgDist <= 25)  { tessLevel = 15;  }
+	else if (avgDist <= 50)  { tessLevel = 10;  }
+	else if (avgDist <= 75)  { tessLevel = 5;   }
+	else if (avgDist <= 100) { tessLevel = 3;   }
+	else if (avgDist <= 125) { tessLevel = 1.5; }
+	else if (avgDist <= 150) { tessLevel = 1.25;}
+
+	return clamp(tessLevel, 1, maxDivisions);
 }
 
 float GetTessLevelExpo(float distA, float distB)

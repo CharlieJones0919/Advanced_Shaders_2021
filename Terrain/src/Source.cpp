@@ -95,11 +95,13 @@ int main()
 
 	unsigned int heightMap = loadTexture("..\\resources\\textures\\heightMap.jpg");
 	unsigned int grassTexture = loadTexture("..\\resources\\textures\\grassMat.jpg");
+	unsigned int rockTexture = loadTexture("..\\resources\\textures\\rockMat.png");
 
 	//std::string modelDir = "..\\resources\\models\\Tree1.obj";
 	//std::ifstream modelPath(modelDir);
 	//if (!modelPath) std::cout << "Error::could not read filepath: " << modelDir << std::endl; //Check file path was successfully loaded.
-	//Model treeModel("..\\resources\\models\\Tree1.obj");
+//	Model treeModel("..\\resources\\models\\Tree1.obj");
+
 	//Model cyborgModel("..\\resources\\models\\nano\\nanosuit\\nanosuit.obj");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
@@ -108,7 +110,7 @@ int main()
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	glm::vec3 dirLightPos(.7f, -.6f, .2f);
+	glm::vec3 dirLightPos(.5f, -.6f, .2f);
 
 	glm::vec3 pos = glm::vec3(5, 0, 0);
 
@@ -131,18 +133,16 @@ int main()
 		(*currentShader).setMat4("projection", projection);
 		(*currentShader).setVec3("eyePos", camera.Position);
 
-		(*currentShader).setFloat("maxDivisions", 50);
+		(*currentShader).setFloat("maxDivisions", 100);
 		(*currentShader).setFloat("stepTess", stepTess);
 
 		(*currentShader).setInt("heightMapTex", 1);
 		(*currentShader).setFloat("heightMapScale", heightMapScale);
-	
 		(*currentShader).setInt("groundTex", 2);
-		(*currentShader).setFloat("groundTexScaler", 10);
 
 		////light properties
 		(*currentShader).setVec3("dirLight.direction", dirLightPos);
-		(*currentShader).setVec3("dirLight.ambient", 0.5f, 0.5f, 0.5f);
+		(*currentShader).setVec3("dirLight.ambient", 0.75f, 0.75f, 0.75f);
 		(*currentShader).setVec3("dirLight.diffuse", 0.55f, 0.55f, 0.55f);
 		(*currentShader).setVec3("dirLight.specular", 0.6f, 0.6f, 0.6f);
 		////material properties
@@ -151,8 +151,8 @@ int main()
 		(*currentShader).setVec3("mat.specular", 0.297f, 0.308f, 0.306f);
 		(*currentShader).setFloat("mat.shininess", 0.9f);
 
-		//treeModel.Draw((*currentShader));
-		//cyborgModel.Draw((*currentShader));
+	//	treeModel.Draw((*currentShader));
+	//	cyborgModel.Draw((*currentShader));
 
 
 
@@ -160,8 +160,10 @@ int main()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, heightMap);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, grassTexture);
-		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+		glBindTexture(GL_TEXTURE_2D, rockTexture);
+
+		if (currentShader != shaderList[0].second) { glDrawArrays(GL_PATCHES, 0, terrain.getSize()); }
+		else { glDrawArrays(GL_TRIANGLES, 0, terrain.getSize()); }
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
