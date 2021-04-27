@@ -1,0 +1,68 @@
+// first step of tesselation shader
+// tesselation control shader add/deletes control points and determines the tesselatation level
+// patch has three control points here (three vertices for each triangle)
+
+#version 450 core
+layout (vertices = 3) out;
+
+// vectors stored as arrays - each patch has three vertices, each with an xyz pos and xyz norm value 
+//posVS = position from Vertex Shader, posTC = position from this Tesselation Control shader
+
+float GetTessLevelStep(float distA, float distB);
+float GetTessLevelExpo(float distA, float distB);
+
+uniform vec3 eyePos;
+uniform float maxDivisions;
+
+in vec3 vPos[];
+in vec2 vTexCoords[];
+
+out vec3 tCPos[];
+out vec2 tCTexCoords[] ;
+
+void main()
+{
+   // gpu can calculate each control point in parallel
+   // tesselation level same for entire patch so only need to set it once (for the first control point)
+   // gl_invocation called for each control point
+   if (gl_InvocationID==0)
+   {
+			float eyeToVertDist0 = distance(eyePos, vPos[0]);
+			float eyeToVertDist1 = distance(eyePos, vPos[1]);
+			float eyeToVertDist2 = distance(eyePos, vPos[2]);
+   
+			// Calculate the tessellation levels
+			gl_TessLevelOuter[0] = GetTessLevelStep(eyeToVertDist1, eyeToVertDist2); 
+			gl_TessLevelOuter[1] = GetTessLevelStep(eyeToVertDist2, eyeToVertDist0);  
+			gl_TessLevelOuter[2] = GetTessLevelStep(eyeToVertDist0, eyeToVertDist1); 
+			gl_TessLevelInner[0] = gl_TessLevelOuter[2]; 
+   }
+
+   // pass through position and normal information
+   tCPos[gl_InvocationID]  = vPos[gl_InvocationID];
+   tCTexCoords[gl_InvocationID] = vTexCoords[gl_InvocationID];
+}
+
+float GetTessLevelStep(float distA, float distB)
+{
+	float avgDist = (distA + distB) / 2.0f;
+	
+	if (avgDist <= 1) { return 150;  }
+	else if (avgDist <= 2.5) { return 100;  }
+	else if (avgDist <= 4) { return 75;  }
+	else if (avgDist <= 7.5) { return 50;  }
+	else if (avgDist <= 10) { return 25;  }
+	else if (avgDist <= 25) { return 15;  }
+	else if (avgDist <= 50) { return 10;  }
+	else if (avgDist <= 75) { return 5; }
+	else if (avgDist <= 100) { return 3; }
+	else if (avgDist <= 125) { return 1.5; }
+	else if (avgDist <= 150) { return 1.25; }
+	else { return 1; }
+}
+
+float GetTessLevelExpo(float distA, float distB)
+{
+	float avgDist = (distA + distB) / 2.0f;
+	return clamp(maxDivisions - (avgDist * 0.5), 1, maxDivisions);
+}
