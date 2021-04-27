@@ -40,7 +40,7 @@ bool firstMouse = true;
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int next);
-unsigned int heightMapScale = 50;
+unsigned int heightMapScale = 100;
 bool stepTess = true;
 
 //arrays
@@ -94,15 +94,16 @@ int main()
 	SetCurrentShader(0);
 
 	unsigned int heightMap = loadTexture("..\\resources\\textures\\heightMap.jpg");
-	unsigned int grassTexture = loadTexture("..\\resources\\textures\\grassMat.jpg");
-	unsigned int rockTexture = loadTexture("..\\resources\\textures\\rockMat.png");
+	unsigned int waterTex = loadTexture("..\\resources\\textures\\waterMat.jpg");
+	unsigned int grassTex = loadTexture("..\\resources\\textures\\grassMat.jpg");
+	unsigned int rockTex = loadTexture("..\\resources\\textures\\rockMat.jpg");
+	unsigned int snowTex = loadTexture("..\\resources\\textures\\snowMat.jpg");
 
 	//std::string modelDir = "..\\resources\\models\\Tree1.obj";
 	//std::ifstream modelPath(modelDir);
 	//if (!modelPath) std::cout << "Error::could not read filepath: " << modelDir << std::endl; //Check file path was successfully loaded.
 //	Model treeModel("..\\resources\\models\\Tree1.obj");
 
-	//Model cyborgModel("..\\resources\\models\\nano\\nanosuit\\nanosuit.obj");
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
 	Terrain terrain(50, 50,10);
@@ -136,9 +137,12 @@ int main()
 		(*currentShader).setFloat("maxDivisions", 100);
 		(*currentShader).setFloat("stepTess", stepTess);
 
-		(*currentShader).setInt("heightMapTex", 1);
 		(*currentShader).setFloat("heightMapScale", heightMapScale);
-		(*currentShader).setInt("groundTex", 2);
+		(*currentShader).setInt("heightMapTex", 1);
+		(*currentShader).setInt("groundTex0", 2);
+		(*currentShader).setInt("groundTex1", 3);
+		(*currentShader).setInt("groundTex2", 4);
+		(*currentShader).setInt("groundTex3", 5);
 
 		////light properties
 		(*currentShader).setVec3("dirLight.direction", dirLightPos);
@@ -146,9 +150,9 @@ int main()
 		(*currentShader).setVec3("dirLight.diffuse", 0.55f, 0.55f, 0.55f);
 		(*currentShader).setVec3("dirLight.specular", 0.6f, 0.6f, 0.6f);
 		////material properties
-		(*currentShader).setVec3("mat.ambient", 0.3, 0.387, 0.317);
+		(*currentShader).setVec3("mat.ambient", 0.6, 0.687, 0.617);
 		(*currentShader).setVec3("mat.diffuse", 0.396, 0.741, 0.691);
-		(*currentShader).setVec3("mat.specular", 0.297f, 0.308f, 0.306f);
+		(*currentShader).setVec3("mat.specular", 0.597f, 0.608f, 0.606f);
 		(*currentShader).setFloat("mat.shininess", 0.9f);
 
 	//	treeModel.Draw((*currentShader));
@@ -160,7 +164,13 @@ int main()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, heightMap);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, rockTexture);
+		glBindTexture(GL_TEXTURE_2D, waterTex);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, grassTex);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, rockTex);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, snowTex);
 
 		if (currentShader != shaderList[0].second) { glDrawArrays(GL_PATCHES, 0, terrain.getSize()); }
 		else { glDrawArrays(GL_TRIANGLES, 0, terrain.getSize()); }
