@@ -13,6 +13,7 @@ float GetTessLevelExpo(float distA, float distB);
 
 uniform vec3 eyePos;
 uniform float maxDivisions;
+uniform bool stepTess;
 
 in vec3 vPos[];
 in vec2 vTexCoords[];
@@ -27,15 +28,25 @@ void main()
    // gl_invocation called for each control point
    if (gl_InvocationID==0)
    {
-			float eyeToVertDist0 = distance(eyePos, vPos[0]);
-			float eyeToVertDist1 = distance(eyePos, vPos[1]);
-			float eyeToVertDist2 = distance(eyePos, vPos[2]);
+		float eyeToVertDist0 = distance(eyePos, vPos[0]);
+		float eyeToVertDist1 = distance(eyePos, vPos[1]);
+		float eyeToVertDist2 = distance(eyePos, vPos[2]);
    
-			// Calculate the tessellation levels
+		// Calculate the tessellation levels
+		if (stepTess)
+		{
 			gl_TessLevelOuter[0] = GetTessLevelStep(eyeToVertDist1, eyeToVertDist2); 
 			gl_TessLevelOuter[1] = GetTessLevelStep(eyeToVertDist2, eyeToVertDist0);  
 			gl_TessLevelOuter[2] = GetTessLevelStep(eyeToVertDist0, eyeToVertDist1); 
 			gl_TessLevelInner[0] = gl_TessLevelOuter[2]; 
+		}
+		else
+		{
+			gl_TessLevelOuter[0] = GetTessLevelExpo(eyeToVertDist1, eyeToVertDist2); 
+			gl_TessLevelOuter[1] = GetTessLevelExpo(eyeToVertDist2, eyeToVertDist0);  
+			gl_TessLevelOuter[2] = GetTessLevelExpo(eyeToVertDist0, eyeToVertDist1); 
+			gl_TessLevelInner[0] = gl_TessLevelOuter[2]; 
+		}
    }
 
    // pass through position and normal information

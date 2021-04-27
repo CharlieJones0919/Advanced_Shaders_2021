@@ -13,15 +13,14 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform sampler2D heightMapTex;
+uniform float heightMapScale;
 
 // read in vector arrays from previous shader
 in vec3 tCPos[];
-in vec3 tCNormals[];
 in vec2 tCTexCoords[];
 
 // pass along the interpolated values
 out vec3 tEPos;
-out vec3 tENormals;
 out vec2 tETexCoords;
 
 void main()
@@ -29,11 +28,10 @@ void main()
     // interpolate the normal and xyz position using the linear interpolation function
     // use 3D because they are in three dimensions; 2D also included for uv texture coordinates
    tEPos = interpolate3D(tCPos[0], tCPos[1], tCPos[2]) ;
-   tENormals = interpolate3D(tCNormals[0], tCNormals[1], tCNormals[2]);
    tETexCoords = interpolate2D(tCTexCoords[0], tCTexCoords[1], tCTexCoords[2]);
 
    float height = texture(heightMapTex, tETexCoords).r;
-   tEPos.y = height * 50; 
+   tEPos.y = height * heightMapScale; 
    gl_Position = projection * view * vec4(tEPos, 1.0); 
 }
 

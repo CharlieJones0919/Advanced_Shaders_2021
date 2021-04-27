@@ -40,6 +40,8 @@ bool firstMouse = true;
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int next);
+unsigned int heightMapScale = 50;
+bool stepTess = true;
 
 //arrays
 unsigned int terrainVAO;
@@ -104,7 +106,7 @@ int main()
 	Terrain terrain(50, 50,10);
 	terrainVAO = terrain.getVAO();
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glm::vec3 dirLightPos(.7f, -.6f, .2f);
 
@@ -129,9 +131,14 @@ int main()
 		(*currentShader).setMat4("projection", projection);
 		(*currentShader).setVec3("eyePos", camera.Position);
 
+		(*currentShader).setFloat("maxDivisions", 50);
+		(*currentShader).setFloat("stepTess", stepTess);
+
 		(*currentShader).setInt("heightMapTex", 1);
+		(*currentShader).setFloat("heightMapScale", heightMapScale);
+	
 		(*currentShader).setInt("groundTex", 2);
-		(*currentShader).setFloat("maxDivisions", 100);
+		(*currentShader).setFloat("groundTexScaler", 10);
 
 		////light properties
 		(*currentShader).setVec3("dirLight.direction", dirLightPos);
@@ -173,26 +180,23 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); 
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
 
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		SetCurrentShader(0);
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		SetCurrentShader(1);
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		SetCurrentShader(2);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0); }
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); }
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2); }
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS) { heightMapScale++; }
+	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) { if (heightMapScale > 1) { heightMapScale--; } }
+
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) { stepTess = true; }
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { stepTess = false; }
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { camera.ProcessKeyboard(FORWARD, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { camera.ProcessKeyboard(LEFT, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { camera.ProcessKeyboard(RIGHT, deltaTime); }
 }
 
 void SetCurrentShader(int shaderNum)
