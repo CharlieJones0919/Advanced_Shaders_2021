@@ -48,25 +48,44 @@ void main()
     vec3 specular = dirLight.specular * (spec * mat.specular);
   
   	float fragHeight = gPos.y / heightMapScale;
-	vec3 colour;
+	//vec3 colour;
+		
+    vec3 blendPercent = normalize(abs(gPos));
+    float blend = (blendPercent.x + blendPercent.y, blendPercent.z);
+    blendPercent = blendPercent / vec3(blend);
 	
-	if (fragHeight >= 0.80f)
+	vec3 xAxis; 
+	vec3 yAxis; 
+	vec3 zAxis; 
+
+	if (fragHeight >= 0.75) // SNOW 2 ROCK ↓
 	{  
-		colour = vec3(mix(vec3(texture(groundTex2, gTexCoords)), vec3(texture(groundTex3, gTexCoords)), smoothstep(0.3,1.0, heightMapScale)).rgb);
+		xAxis = vec3(texture(groundTex0, gTexCoords));
+		yAxis = vec3(texture(groundTex0, gTexCoords));
+		zAxis = vec3(texture(groundTex0, gTexCoords));
+	//	colour = vec3(mix(vec3(texture(groundTex1, gTexCoords)), vec3(texture(groundTex0, gTexCoords)), smoothstep(0.25,1.0, fragHeight)).rgb);
+
+	}  	
+	else if (fragHeight >= 0.20f) // ROCK 2 SNOW ↑
+	{     
+		xAxis = vec3(texture(groundTex1, gTexCoords));
+		yAxis = vec3(texture(groundTex1, gTexCoords));
+		zAxis = vec3(texture(groundTex1, gTexCoords));
+	//	colour = vec3(mix(vec3(texture(groundTex1, gTexCoords)), vec3(texture(groundTex0, gTexCoords)), smoothstep(0.25,1.0, fragHeight)).rgb);
+	}  
+	else if (fragHeight >= 0.10f)   // GRASS 2 ROCK ↑
+    {      
+		xAxis = vec3(texture(groundTex2,  gTexCoords));
+		yAxis = vec3(texture(groundTex2,  gTexCoords));
+		zAxis = vec3(texture(groundTex2,  gTexCoords));
 	}                                        
-	else if (fragHeight >= 0.65f)            
+	else if (fragHeight < 0.10f) // WATER                      
 	{                                        
-		colour = vec3(mix(vec3(texture(groundTex2, gTexCoords)), vec3(texture(groundTex3, gTexCoords)), smoothstep(0.3,1.0, heightMapScale)).rgb);
-	}                                        
-	else if (fragHeight >= 0.25f)            
-	{                                        
-		colour = vec3(mix(vec3(texture(groundTex1, gTexCoords)), vec3(texture(groundTex2, gTexCoords)), smoothstep(0.3,1.0, heightMapScale)).rgb);
-	}                                        
-	else if (fragHeight < 0.25f)                            
-	{                                        
-		colour = vec3(mix(vec3(texture(groundTex0, gTexCoords)), vec3(texture(groundTex1, gTexCoords)), smoothstep(0.3,1.0, heightMapScale)).rgb);
+		xAxis = vec3(texture(groundTex3, gTexCoords));
+		yAxis = vec3(texture(groundTex3, gTexCoords));
+		zAxis = vec3(texture(groundTex3, gTexCoords));
 	}
 	
-	//FragColor = vec4((ambient + diffuse + specular),1.0f)) ;
-	FragColor = vec4(vec3(ambient + diffuse + specular) * colour, 1.0f);
+	vec3 tpTex = (xAxis * blendPercent.x) + (yAxis * blendPercent.y) + (zAxis * blendPercent.z);
+	FragColor = vec4(vec3(ambient + diffuse + specular) * tpTex, 1.0f) ;
 }

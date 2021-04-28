@@ -40,7 +40,7 @@ bool firstMouse = true;
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int next);
-unsigned int heightMapScale = 100;
+unsigned int heightMapScale = 1;
 bool stepTess = true;
 
 //arrays
@@ -110,10 +110,9 @@ int main()
 	terrainVAO = terrain.getVAO();
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glClearColor(0.0f,0.5f,1.0f,1.0f);
 
-	glm::vec3 dirLightPos(.5f, -.6f, .2f);
-
-	glm::vec3 pos = glm::vec3(5, 0, 0);
+	glm::vec3 lightPos(.0f, 0.0f, .0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -139,21 +138,21 @@ int main()
 
 		(*currentShader).setFloat("heightMapScale", heightMapScale);
 		(*currentShader).setInt("heightMapTex", 1);
-		(*currentShader).setInt("groundTex0", 2);
-		(*currentShader).setInt("groundTex1", 3);
-		(*currentShader).setInt("groundTex2", 4);
-		(*currentShader).setInt("groundTex3", 5);
+		(*currentShader).setInt("groundTex0", 2); // Snow
+		(*currentShader).setInt("groundTex1", 3); // Rock
+		(*currentShader).setInt("groundTex2", 4); // Grass
+		(*currentShader).setInt("groundTex3", 5); // Water
 
 		////light properties
-		(*currentShader).setVec3("dirLight.direction", dirLightPos);
-		(*currentShader).setVec3("dirLight.ambient", 0.75f, 0.75f, 0.75f);
-		(*currentShader).setVec3("dirLight.diffuse", 0.55f, 0.55f, 0.55f);
-		(*currentShader).setVec3("dirLight.specular", 0.6f, 0.6f, 0.6f);
+		(*currentShader).setVec3("dirLight.direction", lightPos);
+		(*currentShader).setVec3("dirLight.ambient", 0.5f, 0.5f, 0.5f);
+		(*currentShader).setVec3("dirLight.diffuse", 0.3f, 0.3f, 0.3f);
+		(*currentShader).setVec3("dirLight.specular", 0.2f, 0.2f, 0.2f);
 		////material properties
-		(*currentShader).setVec3("mat.ambient", 0.6, 0.687, 0.617);
-		(*currentShader).setVec3("mat.diffuse", 0.396, 0.741, 0.691);
-		(*currentShader).setVec3("mat.specular", 0.597f, 0.608f, 0.606f);
-		(*currentShader).setFloat("mat.shininess", 0.9f);
+		(*currentShader).setVec3("mat.ambient", 0.3, 0.3, 0.3);
+		(*currentShader).setVec3("mat.diffuse", 0.3, 0.3, 0.3);
+		(*currentShader).setVec3("mat.specular", 0.1f, 0.1f, 0.1f);
+		(*currentShader).setFloat("mat.shininess", 0.25f);
 
 	//	treeModel.Draw((*currentShader));
 	//	cyborgModel.Draw((*currentShader));
@@ -164,13 +163,13 @@ int main()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, heightMap);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, waterTex);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, grassTex);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, rockTex);
-		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, snowTex);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, rockTex);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, grassTex);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, waterTex);
 
 		if (currentShader != shaderList[0].second) { glDrawArrays(GL_PATCHES, 0, terrain.getSize()); }
 		else { glDrawArrays(GL_TRIANGLES, 0, terrain.getSize()); }
@@ -204,6 +203,8 @@ void processInput(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) { stepTess = true; }
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { stepTess = false; }
+
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { cout << "Current Camera Position: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << endl; }
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { camera.ProcessKeyboard(FORWARD, deltaTime); }
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }
