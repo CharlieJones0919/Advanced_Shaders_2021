@@ -40,8 +40,10 @@ bool firstMouse = true;
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int next);
+
 unsigned int heightMapScale = 125;
 bool stepTess = true;
+float fogDensity = 0;
 
 //arrays
 unsigned int terrainVAO;
@@ -145,7 +147,9 @@ int main()
 		(*currentShader).setInt("groundTex2", 4); // Grass
 		(*currentShader).setInt("groundTex3", 5); // Water
 
-		(*currentShader).setVec3("sky", skyColour); 
+		(*currentShader).setFloat("fogDensity", fogDensity); 
+		(*currentShader).setFloat("fogDistance", 0.00001f); 
+		(*currentShader).setVec3("sky", skyColour);
 
 		////light properties
 		(*currentShader).setVec3("dirLight.direction", lightPos);
@@ -209,6 +213,9 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { stepTess = false; }
 
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { cout << "Current Camera Position: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << endl; }
+	
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) { fogDensity = 0.25f; }
+	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) { fogDensity = 0.0f; } 
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { camera.ProcessKeyboard(FORWARD, deltaTime); }
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }

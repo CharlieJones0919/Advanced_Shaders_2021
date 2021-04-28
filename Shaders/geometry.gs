@@ -6,10 +6,14 @@ vec3 getNormal() ;
 in vec3 tEPos[];
 in vec2 tETexCoords[];
 in vec3 tENormals[];
+in float tEVisibility[];
+in vec3 tEEyePos[];
 
 out vec3 gPos;
 out vec3 gNormals;
 out vec2 gTexCoords;
+out float gVisibility;
+out vec3 gEyePos;
 
 void main()
 {
@@ -17,9 +21,12 @@ void main()
    {
       gl_Position = gl_in[i].gl_Position;
       gPos = tEPos[i] ;
-      //gNormals = getNormal();    
+   
 	  gNormals = tENormals[i];
 	  gTexCoords = tETexCoords[i];
+	  gVisibility = tEVisibility[i];
+	  gEyePos = tEEyePos[i];
+	  
       EmitVertex() ;
    }
      EndPrimitive() ;

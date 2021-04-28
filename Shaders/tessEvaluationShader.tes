@@ -7,11 +7,13 @@ layout(triangles, equal_spacing, ccw) in;
 vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2) ;
 vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2) ;
 
-// unifrom matrices to perform transformations
-// previously this would have been done in vertex shader
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform vec3 eyePos;
+
+uniform float fogDensity;
+uniform float fogDistance;
 
 uniform sampler2D heightMapTex;
 uniform float heightMapScale;
@@ -24,6 +26,9 @@ in vec2 tCTexCoords[];
 out vec3 tEPos;
 out vec2 tETexCoords;
 out vec3 tENormals;
+
+out vec3 tEEyePos;
+out float tEVisibility;
 
 void main()
 {
@@ -43,6 +48,12 @@ void main()
    float height = texture(heightMapTex, tETexCoords).r;
    tEPos.y = height * heightMapScale; 
    gl_Position = projection * view * vec4(tEPos, 1.0); 
+   
+   float distance2Cam = distance(eyePos, tEPos);
+   tEVisibility = exp(-pow((distance2Cam * fogDensity), fogDistance));
+   tEVisibility = clamp(tEVisibility, 0.0, 1.0);
+   
+   tEEyePos = eyePos;
 }
 
 //basic linear interpolation

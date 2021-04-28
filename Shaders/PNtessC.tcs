@@ -11,12 +11,12 @@ vec3 getNormal(vec3 a, vec3 b, vec3 c) ;
 uniform sampler2D heightMapTex;
 uniform float heightMapScale;
 
-uniform float maxDivisions;
 uniform vec3 eyePos;
+uniform float maxDivisions;
 uniform bool stepTess;
 
 in vec3 vPos[];
-in vec2 vTexCoords[] ;
+in vec2 vTexCoords[];
 
 struct OutputPatch
 {
@@ -32,6 +32,7 @@ struct OutputPatch
     vec3 WorldPos_B111;
     vec2 tc_texCoords[3];
 	vec3 tc_norms[3];
+	vec3 tc_eyePos;
 };
 
 // attributes of the output CPs
@@ -43,6 +44,7 @@ void main()
    {
        oPatch.tc_texCoords[i] = vTexCoords[i];
    }
+	oPatch.tc_eyePos = eyePos;
 
    CalcPositions();
    float eyeToVertexDist0 = distance(eyePos, vPos[0]);
