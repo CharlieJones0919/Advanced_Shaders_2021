@@ -40,7 +40,7 @@ bool firstMouse = true;
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int next);
-unsigned int heightMapScale = 100;
+unsigned int heightMapScale = 125;
 bool stepTess = true;
 
 //arrays
@@ -110,7 +110,9 @@ int main()
 	terrainVAO = terrain.getVAO();
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glClearColor(0.0f,0.5f,1.0f,1.0f);
+
+	const glm::vec3 skyColour(1.0f, 1.0f, 1.0f);
+	glClearColor(skyColour.x, skyColour.y, skyColour.z, 1.0f);
 
 	glm::vec3 lightPos(.0f, 5.0f, .0f);
 
@@ -142,6 +144,8 @@ int main()
 		(*currentShader).setInt("groundTex1", 3); // Rock
 		(*currentShader).setInt("groundTex2", 4); // Grass
 		(*currentShader).setInt("groundTex3", 5); // Water
+
+		(*currentShader).setVec3("sky", skyColour); 
 
 		////light properties
 		(*currentShader).setVec3("dirLight.direction", lightPos);
