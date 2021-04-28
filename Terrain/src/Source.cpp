@@ -40,7 +40,7 @@ bool firstMouse = true;
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int next);
-unsigned int heightMapScale = 1;
+unsigned int heightMapScale = 100;
 bool stepTess = true;
 
 //arrays
@@ -112,7 +112,7 @@ int main()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glClearColor(0.0f,0.5f,1.0f,1.0f);
 
-	glm::vec3 lightPos(.0f, 0.0f, .0f);
+	glm::vec3 lightPos(.0f, 5.0f, .0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
