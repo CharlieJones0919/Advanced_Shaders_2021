@@ -6,5 +6,5 @@ in vec2 vTexCoords;
 
 void main()
 {
-    FragColor = texture(scene, vTexCoords);
+    FragColor =  texture(scene, vTexCoords);
 }

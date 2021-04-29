@@ -141,6 +141,7 @@ int main()
 	terrainVAO = terrain.getVAO();
 
 	const glm::vec3 skyColour(1.0f, 1.0f, 1.0f);
+	glClearColor(skyColour.x, skyColour.y, skyColour.z, 1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	for (int i = 0; i < shaderList.size(); i++)
@@ -185,12 +186,13 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
 		
+		SetFBOColour();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		(*currentShader).use();
-		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(skyColour.x, skyColour.y, skyColour.z, 1.0f);
-
+		glEnable(GL_DEPTH_TEST);
+	
 		(*currentShader).setMat4("model", model);
 		(*currentShader).setMat4("view", view);
 		(*currentShader).setMat4("projection", projection);
@@ -210,14 +212,17 @@ int main()
 		if (currentShader != shaderList[0].second) { glDrawArrays(GL_PATCHES, 0, terrain.getSize()); }
 		else { glDrawArrays(GL_TRIANGLES, 0, terrain.getSize()); }
 
-		if (modelList.size() > 0)
-		{
-			standardShader.use();
-			for (auto& model : modelList)
-			{
-				(*model.second).Draw(standardShader);
-			}
-		}
+		//if (modelList.size() > 0)
+		//{
+		//	standardShader.use();
+		//	for (auto& model : modelList)
+		//	{
+		//		glActiveTexture(GL_TEXTURE1);
+		//		glBindTexture(GL_TEXTURE_2D, grassTex);
+		//		(*currentShader).setInt("heightMapTex", 1);
+		//		(*model.second).Draw(standardShader);
+		//	}
+		//}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
@@ -313,6 +318,11 @@ void SetFBOColour()
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+}
+
+void SetFBODepth()
+{
+
 }
 
 void RenderQuad()
