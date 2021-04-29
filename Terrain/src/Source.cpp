@@ -88,12 +88,11 @@ int main()
 	//Tesselation with PN Triangles
 	Shader tessPNShader("..\\shaders\\tessVertex.vs", "..\\shaders\\phongFrag.fs", "..\\shaders\\geometry.gs", "..\\shaders\\PNtessC.tcs", "..\\shaders\\PNtessE.tes");
 
-
 	shaderList[0] = { "Standard Shader", &standardShader };
 	shaderList[1] = { "Tesselation Shader", &tessShader };
 	shaderList[2] = { "Tesselation Shader w/ PN Triangles", &tessPNShader };
 	
-	SetCurrentShader(0);
+	SetCurrentShader(1);
 
 	unsigned int heightMap = loadTexture("..\\resources\\textures\\heightMap.jpg");
 	unsigned int waterTex = loadTexture("..\\resources\\textures\\waterMat.jpg");
