@@ -39,9 +39,13 @@ bool firstMouse = true;
 
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
-void SetCurrentShader(int next);
+void SetCurrentShader(int shaderNum);
 
 unsigned int heightMapScale = 100;
+std::map<int, unsigned int> heightMapList;
+unsigned int currentHMap;
+void SetCurrentHeightMap(int mapNum);
+
 bool stepTess = true;
 float fogDensity = 0;
 
@@ -93,7 +97,12 @@ int main()
 	shaderList[2] = { "Tesselation Shader w/ PN Triangles", &tessPNShader };
 	SetCurrentShader(0);
 
-	unsigned int heightMap = loadTexture("..\\resources\\textures\\heightMap.jpg");
+	heightMapList[0] = loadTexture("..\\resources\\textures\\defaultHM.jpg");
+	heightMapList[1] = loadTexture("..\\resources\\textures\\riverHM.jpg");
+	heightMapList[2] = loadTexture("..\\resources\\textures\\centreLakeHM.png");
+	heightMapList[3] = loadTexture("..\\resources\\textures\\lightningHM.png");
+	SetCurrentHeightMap(0);
+
 	unsigned int waterTex = loadTexture("..\\resources\\textures\\waterMat.jpg");
 	unsigned int grassTex = loadTexture("..\\resources\\textures\\grassMat.jpg");
 	unsigned int rockTex = loadTexture("..\\resources\\textures\\rockMat.jpg");
@@ -168,7 +177,7 @@ int main()
 		glBindVertexArray(terrainVAO);
 
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, heightMap);
+		glBindTexture(GL_TEXTURE_2D, currentHMap);
 
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, waterTex);
@@ -206,6 +215,11 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); }
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2); }
 
+	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) { SetCurrentHeightMap(0); }
+	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS) { SetCurrentHeightMap(1); }
+	if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS) { SetCurrentHeightMap(2); }
+	if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS) { SetCurrentHeightMap(3); }
+
 	if (glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS) { heightMapScale++; }
 	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) { if (heightMapScale > 1) { heightMapScale--; } }
 
@@ -229,6 +243,14 @@ void SetCurrentShader(int shaderNum)
 	{
 		std::cout << "Using: '" << shaderList[shaderNum].first << "' (" << (shaderNum + 1) << "/" << shaderList.size() << ")" << std::endl;
 		currentShader = shaderList[shaderNum].second;
+	}
+}
+
+void SetCurrentHeightMap(int mapNum)
+{
+	if (mapNum < heightMapList.size())
+	{
+		currentHMap = heightMapList[mapNum];
 	}
 }
 

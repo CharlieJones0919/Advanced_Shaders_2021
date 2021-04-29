@@ -64,10 +64,7 @@ void main()
 	} 
 	else if (fragHeight >= 0.10f)  
     {      
-	colour = vec3(mix(vec3(texture(grassTex, gTexCoords)), vec3(texture(waterTex, gTexCoords)), smoothstep(0.15,0.10, fragHeight)));
-		
-	
-	//	colour = vec3(texture(grassTex, gTexCoords));
+		colour = vec3(mix(vec3(texture(grassTex, gTexCoords)), vec3(texture(waterTex, gTexCoords)), smoothstep(0.15,0.10, fragHeight)));
 	}  
 	else if (fragHeight < 0.10f)                      
 	{          
