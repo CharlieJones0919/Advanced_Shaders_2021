@@ -29,7 +29,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
 //unsigned int loadTexture2(char const * path);
-//void setVAO(std::vector<float> vertices);
+
 
 // camera
 Camera camera(glm::vec3(260,50,300));
@@ -49,8 +49,20 @@ void SetCurrentHeightMap(int mapNum);
 bool stepTess = true;
 float fogDensity = 0;
 
+std::map<int, Model*> modelList;
+
 //arrays
 unsigned int terrainVAO;
+
+//Framebuffer
+void SetVAO(std::vector<float> vertices);
+void SetFBOColour();
+void SetFBODepth();
+void RenderQuad();
+
+unsigned int /*VBO, VAO, */quadVAO, quadVBO, FBO;
+unsigned int textureColourBuffer;
+unsigned int textureDepthBuffer;
 
 // timing
 float deltaTime = 0.0f;
@@ -92,10 +104,12 @@ int main()
 	//Tesselation with PN Triangles
 	Shader tessPNShader("..\\shaders\\tessVertex.vs", "..\\shaders\\phongFrag.fs", "..\\shaders\\geometry.gs", "..\\shaders\\PNtessC.tcs", "..\\shaders\\PNtessE.tes");
 
+	//Post Processing Shader
+	Shader postProcessingShader("..\\shaders\\postProcessing.vs", "..\\shaders\\postProcessing.fs");
+
 	shaderList[0] = { "Standard Shader", &standardShader };
 	shaderList[1] = { "Tesselation Shader", &tessShader };
 	shaderList[2] = { "Tesselation Shader w/ PN Triangles", &tessPNShader };
-	SetCurrentShader(0);
 
 	heightMapList[0] = loadTexture("..\\resources\\textures\\defaultHM.jpg");
 	heightMapList[1] = loadTexture("..\\resources\\textures\\riverHM.jpg");
@@ -108,20 +122,56 @@ int main()
 	unsigned int rockTex = loadTexture("..\\resources\\textures\\rockMat.jpg");
 	unsigned int snowTex = loadTexture("..\\resources\\textures\\snowMat.jpg");
 
-	//std::string modelDir = "..\\resources\\models\\Tree1.obj";
-	//std::ifstream modelPath(modelDir);
-	//if (!modelPath) std::cout << "Error::could not read filepath: " << modelDir << std::endl; //Check file path was successfully loaded.
-//	Model treeModel("..\\resources\\models\\Tree1.obj");
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, currentHMap);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, waterTex);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, grassTex);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, rockTex);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, snowTex);
 
+	//Model treeModel("..\\resources\\models\\Tree1.obj");
+	//modelList[0] = &treeModel;
 
 	//Terrain Constructor ; number of grids in width, number of grids in height, gridSize
 	Terrain terrain(50, 50,10);
 	terrainVAO = terrain.getVAO();
 
+	const glm::vec3 skyColour(1.0f, 1.0f, 1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	const glm::vec3 skyColour(1.0f, 1.0f, 1.0f);
-	glClearColor(skyColour.x, skyColour.y, skyColour.z, 1.0f);
+	for (int i = 0; i < shaderList.size(); i++)
+	{
+		SetCurrentShader(i);
+		(*currentShader).use();
+
+		(*currentShader).setFloat("heightMapScale", heightMapScale);
+		(*currentShader).setInt("heightMapTex", 1);
+		(*currentShader).setInt("waterTex", 2);
+		(*currentShader).setInt("grassTex", 3);
+		(*currentShader).setInt("rockTex", 4);
+		(*currentShader).setInt("snowTex", 5);
+
+		(*currentShader).setFloat("maxDivisions", 100);
+		(*currentShader).setFloat("fogDistance", 0.0001f);
+		(*currentShader).setVec3("sky", skyColour);
+
+		////light properties
+		(*currentShader).setVec3("dirLight.ambient", 0.5f, 0.5f, 0.5f);
+		(*currentShader).setVec3("dirLight.diffuse", 0.3f, 0.3f, 0.3f);
+		(*currentShader).setVec3("dirLight.specular", 0.2f, 0.2f, 0.2f);
+		////material properties
+		(*currentShader).setVec3("mat.ambient", 0.3, 0.3, 0.3);
+		(*currentShader).setVec3("mat.diffuse", 0.3, 0.3, 0.3);
+		(*currentShader).setVec3("mat.specular", 0.1f, 0.1f, 0.1f);
+		(*currentShader).setFloat("mat.shininess", 0.25f);
+	}
+
+	SetCurrentShader(0);
+	SetFBOColour();
 
 	glm::vec3 lightPos(.0f, 5.0f, .0f);
 
@@ -131,65 +181,50 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
-
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		(*currentShader).use();
+		glEnable(GL_DEPTH_TEST);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearColor(skyColour.x, skyColour.y, skyColour.z, 1.0f);
 
 		(*currentShader).setMat4("model", model);
 		(*currentShader).setMat4("view", view);
 		(*currentShader).setMat4("projection", projection);
 		(*currentShader).setVec3("eyePos", camera.Position);
-
-		(*currentShader).setFloat("maxDivisions", 100);
-		(*currentShader).setFloat("stepTess", stepTess);
-
-		(*currentShader).setFloat("heightMapScale", heightMapScale);
-		(*currentShader).setInt("heightMapTex", 1);
-		(*currentShader).setInt("waterTex", 2); 
-		(*currentShader).setInt("grassTex", 3); 
-		(*currentShader).setInt("rockTex", 4); 
-		(*currentShader).setInt("snowTex", 5); 
-
-		
-
-		(*currentShader).setFloat("fogDensity", fogDensity); 
-		(*currentShader).setFloat("fogDistance", 0.00001f); 
-		(*currentShader).setVec3("sky", skyColour);
-
-		////light properties
 		(*currentShader).setVec3("dirLight.direction", lightPos);
-		(*currentShader).setVec3("dirLight.ambient", 0.5f, 0.5f, 0.5f);
-		(*currentShader).setVec3("dirLight.diffuse", 0.3f, 0.3f, 0.3f);
-		(*currentShader).setVec3("dirLight.specular", 0.2f, 0.2f, 0.2f);
-		////material properties
-		(*currentShader).setVec3("mat.ambient", 0.3, 0.3, 0.3);
-		(*currentShader).setVec3("mat.diffuse", 0.3, 0.3, 0.3);
-		(*currentShader).setVec3("mat.specular", 0.1f, 0.1f, 0.1f);
-		(*currentShader).setFloat("mat.shininess", 0.25f);
-
-	//	treeModel.Draw((*currentShader));
-	//	cyborgModel.Draw((*currentShader));
-
-		glBindVertexArray(terrainVAO);
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, currentHMap);
+		(*currentShader).setInt("heightMapTex", 1);
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, waterTex);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, grassTex);
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, rockTex);
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, snowTex);
+		(*currentShader).setFloat("stepTess", stepTess);
+		(*currentShader).setFloat("heightMapScale", heightMapScale);
+		(*currentShader).setFloat("fogDensity", fogDensity); 
+
+		glBindVertexArray(terrainVAO);
 
 		if (currentShader != shaderList[0].second) { glDrawArrays(GL_PATCHES, 0, terrain.getSize()); }
 		else { glDrawArrays(GL_TRIANGLES, 0, terrain.getSize()); }
+
+		if (modelList.size() > 0)
+		{
+			standardShader.use();
+			for (auto& model : modelList)
+			{
+				(*model.second).Draw(standardShader);
+			}
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		postProcessingShader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textureColourBuffer);
+		RenderQuad();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -232,8 +267,8 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) { fogDensity = 0.0f; } 
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { camera.ProcessKeyboard(FORWARD, deltaTime); }
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { camera.ProcessKeyboard(LEFT, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { camera.ProcessKeyboard(RIGHT, deltaTime); }
 }
 
@@ -252,6 +287,62 @@ void SetCurrentHeightMap(int mapNum)
 	{
 		currentHMap = heightMapList[mapNum];
 	}
+}
+
+void SetFBOColour()
+{
+	glGenFramebuffers(1, &FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+	////////// Colour Attachment //////////
+	// Texture to bind to:
+	glGenTextures(1, &textureColourBuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColourBuffer);
+
+	// Creating space for scene:
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// Bind to frame buffer:
+	glBindFramebuffer(GL_FRAMEBUFFER, textureColourBuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColourBuffer, 0);
+
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+}
+
+void RenderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] =
+		{
+			-1.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+			-1.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+			 1.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+			 1.0f, -1.0f,  0.0f,  1.0f,  0.0f
+		};
+
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(0); // Position co-ordinates.
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1); // UV values.
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

@@ -165,6 +165,7 @@ unsigned int Model::TextureFromFile(const char *path, const string &directory)
 {
 	string filename = string(path);
 	filename = directory + '/' + filename;
+	cout << directory + '/' + filename;
 
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
