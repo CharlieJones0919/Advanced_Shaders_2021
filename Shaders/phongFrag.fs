@@ -53,23 +53,28 @@ void main()
 	float fragHeight = (gPos.y - gNormals.y) / heightMapScale;
 	vec3 colour;   
 	
-	if (fragHeight < 0.175f)                      
-	{          
-		colour = vec3(texture(waterTex, gTexCoords));
-	} 
-	else if (fragHeight >= 0.175f)  
-    {      
-		colour = vec3(mix(vec3(texture(grassTex, gTexCoords)), vec3(texture(rockTex, gTexCoords)), smoothstep(0.10,0.35, fragHeight)).rgb);
-	}  
-	else if (fragHeight >= 0.35f)
-	{     
-		colour = vec3(mix(vec3(texture(rockTex, gTexCoords)), vec3(texture(snowTex, gTexCoords )), smoothstep(0.5,0.75, fragHeight)).rgb);
-		colour = vec3(mix(vec3(texture(grassTex, gTexCoords)), colour, smoothstep(0.15,0.10, fragHeight)));
-	} 
-	else if (fragHeight >= 0.45f)  
+	if (fragHeight >= 0.80f)
 	{  
 		colour = vec3(texture(snowTex, gTexCoords));
 	} 		
+	else if (fragHeight >= 0.20f)
+	{     
+		colour = vec3(mix(vec3(texture(rockTex, gTexCoords)), vec3(texture(grassTex, gTexCoords)), smoothstep(0.40,0.10, fragHeight)));
+		colour = vec3(mix(colour, vec3(texture(snowTex, gTexCoords )), smoothstep(0.5,0.80, fragHeight)).rgb);	
+	} 
+	else if (fragHeight >= 0.10f)  
+    {      
+	colour = vec3(mix(vec3(texture(grassTex, gTexCoords)), vec3(texture(waterTex, gTexCoords)), smoothstep(0.15,0.10, fragHeight)));
+		
+	
+	//	colour = vec3(texture(grassTex, gTexCoords));
+	}  
+	else if (fragHeight < 0.10f)                      
+	{          
+		colour = vec3(texture(waterTex, gTexCoords));
+	} 
+	
+	
 	
 	FragColor = vec4(vec3(ambient + diffuse + specular) * colour, 1.0f);
 	FragColor = mix(vec4(sky, 1.0), FragColor, gVisibility);
