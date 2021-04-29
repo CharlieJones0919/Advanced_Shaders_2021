@@ -28,43 +28,46 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(char const * path);
-//unsigned int loadTexture2(char const * path);
 
-
-// camera
+// Camera
 Camera camera(glm::vec3(260,50,300));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
-bool firstMouse = true;
 
+// Shader Data Set by User Input
+unsigned int heightMapScale = 100;
+bool firstMouse = true;
+bool stepTess = false;
+float fogDensity = 0;
+
+unsigned int postProcessFX = 0;
+bool usingDepthBuffer = false;
+float depthNearPlane = 1;
+float depthFarPlane = 1000;
+
+// Lists for Alternate Shaders and Height Maps
 std::map<int, std::pair<std::string, Shader*>> shaderList;
 Shader* currentShader;
 void SetCurrentShader(int shaderNum);
 
-unsigned int heightMapScale = 100;
 std::map<int, unsigned int> heightMapList;
 unsigned int currentHMap;
 void SetCurrentHeightMap(int mapNum);
 
-bool stepTess = true;
-float fogDensity = 0;
-
 std::map<int, Model*> modelList;
 
-//arrays
-unsigned int terrainVAO;
-
-//Framebuffer
+// Framebuffer
 void SetVAO(std::vector<float> vertices);
 void SetFBOColour();
 void SetFBODepth();
 void RenderQuad();
 
-unsigned int /*VBO, VAO, */quadVAO, quadVBO, FBO;
+unsigned int terrainVAO;
+unsigned int quadVAO, quadVBO, FBO;
 unsigned int textureColourBuffer;
 unsigned int textureDepthBuffer;
 
-// timing
+// Timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
@@ -140,6 +143,7 @@ int main()
 	Terrain terrain(50, 50,10);
 	terrainVAO = terrain.getVAO();
 
+	glm::vec3 lightPos(0.0f, 5.0f, .0f);
 	const glm::vec3 skyColour(1.0f, 1.0f, 1.0f);
 	glClearColor(skyColour.x, skyColour.y, skyColour.z, 1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -164,6 +168,7 @@ int main()
 		(*currentShader).setVec3("dirLight.ambient", 0.5f, 0.5f, 0.5f);
 		(*currentShader).setVec3("dirLight.diffuse", 0.3f, 0.3f, 0.3f);
 		(*currentShader).setVec3("dirLight.specular", 0.2f, 0.2f, 0.2f);
+		(*currentShader).setVec3("dirLight.direction", lightPos);
 		////material properties
 		(*currentShader).setVec3("mat.ambient", 0.3, 0.3, 0.3);
 		(*currentShader).setVec3("mat.diffuse", 0.3, 0.3, 0.3);
@@ -171,10 +176,7 @@ int main()
 		(*currentShader).setFloat("mat.shininess", 0.25f);
 	}
 
-	SetCurrentShader(0);
-	SetFBOColour();
-
-	glm::vec3 lightPos(.0f, 5.0f, .0f);
+	SetCurrentShader(3);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -186,7 +188,11 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
 		
-		SetFBOColour();
+		switch (usingDepthBuffer)
+		{
+			case(true): SetFBODepth(); break;
+			case(false): SetFBOColour(); break;
+		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		(*currentShader).use();
@@ -197,7 +203,7 @@ int main()
 		(*currentShader).setMat4("view", view);
 		(*currentShader).setMat4("projection", projection);
 		(*currentShader).setVec3("eyePos", camera.Position);
-		(*currentShader).setVec3("dirLight.direction", lightPos);
+
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, currentHMap);
@@ -225,10 +231,25 @@ int main()
 		//}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
 		postProcessingShader.use();
+		glDisable(GL_DEPTH_TEST);
+
+		switch (usingDepthBuffer)
+		{
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, textureColourBuffer);
+		case(true): 
+			postProcessingShader.setInt("postProcessEffect", postProcessFX);
+			postProcessingShader.setBool("isDepthBuffer", true);
+			postProcessingShader.setFloat("nearPlane", depthNearPlane);
+			postProcessingShader.setFloat("farPlane", depthFarPlane);
+			glBindTexture(GL_TEXTURE_2D, textureDepthBuffer);
+			break;
+		case(false):
+			postProcessingShader.setBool("isDepthBuffer", false);
+			glBindTexture(GL_TEXTURE_2D, textureColourBuffer);
+			break;
+		}
+
 		RenderQuad();
 
 		glfwSwapBuffers(window);
@@ -236,45 +257,8 @@ int main()
 		processInput(window);
 	}
 
-
 	glfwTerminate();
 	return 0;
-}
-
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-
-	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
-
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0); }
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); }
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2); }
-
-	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) { SetCurrentHeightMap(0); }
-	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS) { SetCurrentHeightMap(1); }
-	if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS) { SetCurrentHeightMap(2); }
-	if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS) { SetCurrentHeightMap(3); }
-
-	if (glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS) { heightMapScale++; }
-	if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) { if (heightMapScale > 1) { heightMapScale--; } }
-
-	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) { stepTess = true; }
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { stepTess = false; }
-
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { cout << "Current Camera Position: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << endl; }
-	
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) { fogDensity = 0.25f; }
-	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) { fogDensity = 0.0f; } 
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { camera.ProcessKeyboard(FORWARD, deltaTime); }
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { camera.ProcessKeyboard(LEFT, deltaTime); }
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { camera.ProcessKeyboard(RIGHT, deltaTime); }
 }
 
 void SetCurrentShader(int shaderNum)
@@ -283,6 +267,7 @@ void SetCurrentShader(int shaderNum)
 	{
 		std::cout << "Using: '" << shaderList[shaderNum].first << "' (" << (shaderNum + 1) << "/" << shaderList.size() << ")" << std::endl;
 		currentShader = shaderList[shaderNum].second;
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 }
 
@@ -309,10 +294,11 @@ void SetFBOColour()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	// Bind to frame buffer:
+	// Bind to frame colour buffer:
 	glBindFramebuffer(GL_FRAMEBUFFER, textureColourBuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColourBuffer, 0);
 
+	// Render buffer:
 	unsigned int rbo;
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
@@ -322,7 +308,27 @@ void SetFBOColour()
 
 void SetFBODepth()
 {
+	glGenFramebuffers(1, &FBO);
 
+	////////// Depth Attachment //////////
+	glGenTextures(1, &textureDepthBuffer);
+	glBindTexture(GL_TEXTURE_2D, textureDepthBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+	// Texture Settings for Sampling & Iteration
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// Bind to frame depth buffer:
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureDepthBuffer, 0);
+
+	// Specify there is no colour buffer:
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void RenderQuad()
@@ -353,6 +359,43 @@ void RenderQuad()
 	glBindVertexArray(quadVAO);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
+}
+
+unsigned int loadTexture(char const * path)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+
+	int width, height, nrComponents;
+	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		stbi_image_free(data);
+		std::cout << "Loaded texture at path: " << path << " width " << width << " id " << textureID <<  std::endl;
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	return textureID;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -389,41 +432,65 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	camera.ProcessMouseScroll(yoffset);
 }
 
-unsigned int loadTexture(char const * path)
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window)
 {
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { glfwSetWindowShouldClose(window, true); }
 
-	int width, height, nrComponents;
-	unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-	if (data)
+	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
+	else if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0); }
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); }
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2); }
+
+	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) { SetCurrentHeightMap(0); }
+	else	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS) { SetCurrentHeightMap(1); }
+	else if (glfwGetKey(window, GLFW_KEY_KP_3) == GLFW_PRESS) { SetCurrentHeightMap(2); }
+	else if (glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS) { SetCurrentHeightMap(3); }
+
+	if (glfwGetKey(window, GLFW_KEY_COMMA) == GLFW_PRESS) { usingDepthBuffer = false; }
+	else if (glfwGetKey(window, GLFW_KEY_PERIOD) == GLFW_PRESS) { usingDepthBuffer = true; }
+	
+	if (!usingDepthBuffer)
 	{
-		GLenum format;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		stbi_image_free(data);
-		std::cout << "Loaded texture at path: " << path << " width " << width << " id " << textureID <<  std::endl;
-
+		if		(glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS) { postProcessFX = 0; }
+		else if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS) { postProcessFX = 1; }
+		else if (glfwGetKey(window, GLFW_KEY_F3) == GLFW_PRESS) { postProcessFX = 2; }
 	}
 	else
 	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-		
+		if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		{
+			depthFarPlane += 5; cout << "Depth Far Plane: " << depthFarPlane << endl;
+		}
+		else if ((glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) && (depthFarPlane > 5))
+		{
+			depthFarPlane -= 5; cout << "Depth Far Plane: " << depthFarPlane << endl;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		{
+			depthNearPlane++; cout << "Depth Near Plane: " << depthNearPlane << endl;
+		}
+		else if ((glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) && (depthNearPlane > 1))
+		{
+			depthNearPlane--; cout << "Depth Near Plane: " << depthNearPlane << endl;
+		}
 	}
 
-	return textureID;
+	if (glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS) { heightMapScale++; }
+	else if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) { if (heightMapScale > 5) { heightMapScale--; } }
+
+	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) { stepTess = true; }
+	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { stepTess = false; }
+
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) { fogDensity = 0.25f; }
+	else if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) { fogDensity = 0.0f; }
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) { camera.ProcessKeyboard(FORWARD, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) { camera.ProcessKeyboard(LEFT, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) { camera.ProcessKeyboard(BACKWARD, deltaTime); }
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) { camera.ProcessKeyboard(RIGHT, deltaTime); }
 }
