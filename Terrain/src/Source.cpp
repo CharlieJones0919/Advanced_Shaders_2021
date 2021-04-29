@@ -57,7 +57,6 @@ void SetCurrentHeightMap(int mapNum);
 std::map<int, Model*> modelList;
 
 // Framebuffer
-void SetVAO(std::vector<float> vertices);
 void SetFBOColour();
 void SetFBODepth();
 void RenderQuad();
@@ -70,7 +69,6 @@ unsigned int textureDepthBuffer;
 // Timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-
 
 int main()
 {
@@ -106,7 +104,6 @@ int main()
 	Shader tessShader("..\\shaders\\tessVertex.vs", "..\\shaders\\phongFrag.fs", "..\\shaders\\geometry.gs", "..\\shaders\\tessControlShader.tcs", "..\\shaders\\tessEvaluationShader.tes");
 	//Tesselation with PN Triangles
 	Shader tessPNShader("..\\shaders\\tessVertex.vs", "..\\shaders\\phongFrag.fs", "..\\shaders\\geometry.gs", "..\\shaders\\PNtessC.tcs", "..\\shaders\\PNtessE.tes");
-
 	//Post Processing Shader
 	Shader postProcessingShader("..\\shaders\\postProcessing.vs", "..\\shaders\\postProcessing.fs");
 
@@ -204,7 +201,6 @@ int main()
 		(*currentShader).setMat4("projection", projection);
 		(*currentShader).setVec3("eyePos", camera.Position);
 
-
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, currentHMap);
 		(*currentShader).setInt("heightMapTex", 1);
@@ -234,9 +230,11 @@ int main()
 		postProcessingShader.use();
 		glDisable(GL_DEPTH_TEST);
 
+		glActiveTexture(GL_TEXTURE0);
+
 		switch (usingDepthBuffer)
 		{
-		glActiveTexture(GL_TEXTURE0);
+
 		case(true): 
 			postProcessingShader.setInt("postProcessEffect", postProcessFX);
 			postProcessingShader.setBool("isDepthBuffer", true);
@@ -250,7 +248,7 @@ int main()
 			break;
 		}
 
-		RenderQuad();
+		RenderQuad(); // Render FBO Scene Texture
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -281,6 +279,7 @@ void SetCurrentHeightMap(int mapNum)
 
 void SetFBOColour()
 {
+	glActiveTexture(GL_TEXTURE0);
 	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
@@ -308,6 +307,7 @@ void SetFBOColour()
 
 void SetFBODepth()
 {
+	glActiveTexture(GL_TEXTURE0);
 	glGenFramebuffers(1, &FBO);
 
 	////////// Depth Attachment //////////
@@ -441,9 +441,12 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
 	else if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
 
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0); }
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); }
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2); }
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0);		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2);		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
 
 	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) { SetCurrentHeightMap(0); }
 	else	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS) { SetCurrentHeightMap(1); }
@@ -481,7 +484,7 @@ void processInput(GLFWwindow *window)
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_KP_ADD) == GLFW_PRESS) { heightMapScale++; }
-	else if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) { if (heightMapScale > 5) { heightMapScale--; } }
+	else if (glfwGetKey(window, GLFW_KEY_KP_SUBTRACT) == GLFW_PRESS) { if (heightMapScale > 1) { heightMapScale--; } }
 
 	if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) { stepTess = true; }
 	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) { stepTess = false; }
