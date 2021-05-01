@@ -157,7 +157,7 @@ int main()
 		(*currentShader).setInt("rockTex", 4);
 		(*currentShader).setInt("snowTex", 5);
 
-		(*currentShader).setFloat("maxDivisions", 100);
+		(*currentShader).setFloat("maxDivisions", 150);
 		(*currentShader).setFloat("fogDistance", 0.0001f);
 		(*currentShader).setVec3("sky", skyColour);
 
@@ -441,12 +441,9 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); }
 	else if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); }
 
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0);		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2);		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) { SetCurrentShader(0); }
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) { SetCurrentShader(1); }
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) { SetCurrentShader(2); }
 
 	if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) { SetCurrentHeightMap(0); }
 	else	if (glfwGetKey(window, GLFW_KEY_KP_2) == GLFW_PRESS) { SetCurrentHeightMap(1); }

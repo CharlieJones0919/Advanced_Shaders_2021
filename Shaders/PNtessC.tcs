@@ -46,6 +46,18 @@ void main()
    }
 	oPatch.tc_eyePos = eyePos;
 
+   for(int i = 0 ; i < 3; i++)
+   {
+   	float left = (textureOffset(heightMapTex, vTexCoords[i], ivec2(-1,0)).r) * heightMapScale;
+	float right = (textureOffset(heightMapTex, vTexCoords[i], ivec2(1,0)).r) * heightMapScale;
+	float up = (textureOffset(heightMapTex, vTexCoords[i], ivec2(0,1)).r) * heightMapScale;
+	float down = (textureOffset(heightMapTex, vTexCoords[i], ivec2(0,-1)).r) * heightMapScale;
+	
+	float lr = left - right;
+	float du = up - down;
+	oPatch.tc_norms[i] = normalize(vec3(lr, 2.0f, du));
+   }
+
    CalcPositions();
    float eyeToVertexDist0 = distance(eyePos, vPos[0]);
    float eyeToVertexDist1 = distance(eyePos, vPos[1]);
@@ -93,18 +105,6 @@ void CalcPositions()
     oPatch.WorldPos_B201 = oPatch.WorldPos_B003 + EdgeB030 * 2.0 / 3.0;
     oPatch.WorldPos_B210 = oPatch.WorldPos_B300 + EdgeB003 / 3.0;
     oPatch.WorldPos_B120 = oPatch.WorldPos_B300 + EdgeB003 * 2.0 / 3.0;
-
-   for(int i = 0 ; i < 3; i++)
-   {
-   	float left = (textureOffset(heightMapTex, vTexCoords[i], ivec2(-1,0)).r) * heightMapScale;
-	float right = (textureOffset(heightMapTex, vTexCoords[i], ivec2(1,0)).r) * heightMapScale;
-	float up = (textureOffset(heightMapTex, vTexCoords[i], ivec2(0,1)).r) * heightMapScale;
-	float down = (textureOffset(heightMapTex, vTexCoords[i], ivec2(0,-1)).r) * heightMapScale;
-	
-	float lr = left - right;
-	float du = up - down;
-	oPatch.tc_norms[i] = normalize(vec3(lr, 2.0f, du));
-   }
 
     // Project each midpoint on the plane defined by the nearest vertex and its normal
     oPatch.WorldPos_B021 = ProjectToPlane(oPatch.WorldPos_B021, oPatch.WorldPos_B030,
